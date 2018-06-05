@@ -1,11 +1,14 @@
 ## ScreenTask
 ------------------------------
-### List Of Features : 
+### List Of Features (from original) : 
 - Share Your Screen Inside a Network Without Internet Connection (No TeamViewer Anymore)
 - WebUI So Clients Doesn't Need Any Additional Software (Only Web Browser)
 - Make Your Session Private Using Basic Authentication (User::Password)
 - Unlimited Number Of Connected Clients
 
+### New features added :
+- Run options are saved and restored
+- Screen capture fills screen of web browser 
 ------------------------------
 
 ## This version is a fork from : 
