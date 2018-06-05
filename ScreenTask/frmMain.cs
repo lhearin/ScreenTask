@@ -40,6 +40,12 @@ namespace ScreenTask
             isPrivateTask = false;
             isPreview = false;
             isMouseCapture = false;
+
+            foreach (var screen in Screen.AllScreens)
+            {
+                comboScreens.Items.Add(screen.DeviceName.Replace("\\","").Replace(".",""));
+            }
+            comboScreens.SelectedIndex = Properties.Settings.Default.Display;
         }
 
         private async void btnStartServer_Click(object sender, EventArgs e)
@@ -51,7 +57,13 @@ namespace ScreenTask
                 btnStartServer.Text = "Start Server";
                 isWorking = false;
                 isTakingScreenshots = false;
-                Log("Server Stoped.");
+                Log("Server Stopped.");
+                return;
+            }
+
+			if (cbPrivate.Checked && (txtUser.Text.Length==0 || txtPassword.Text.Length==0))
+			{
+				MessageBox.Show("For a Private Task you must provide a User and a Password");
                 return;
             }
 
@@ -218,24 +230,27 @@ namespace ScreenTask
         {
             if (captureMouse)
             {
-                var bmp = ScreenCapturePInvoke.CaptureFullScreen(true);
+                var bmp = ScreenCapturePInvoke.CaptureSelectedScreen(true,comboScreens.SelectedIndex);
                 rwl.AcquireWriterLock(Timeout.Infinite);
                 bmp.Save(Application.StartupPath + "/WebServer" + "/ScreenTask.jpg", ImageFormat.Jpeg);
                 rwl.ReleaseWriterLock();
+                
                 if (isPreview)
                 {
                     img = new MemoryStream();
                     bmp.Save(img, ImageFormat.Jpeg);
                     imgPreview.Image = new Bitmap(img);
                 }
+                bmp.Dispose();
+                bmp = null;
                 return;
             }
-            Rectangle bounds = Screen.GetBounds(Point.Empty);
-            using (Bitmap bitmap = new Bitmap(bounds.Width, bounds.Height))
+			Screen screen = Screen.AllScreens[comboScreens.SelectedIndex];
+            using (Bitmap bitmap = new Bitmap(screen.Bounds.Width, screen.Bounds.Height))
             {
                 using (Graphics g = Graphics.FromImage(bitmap))
                 {
-                    g.CopyFromScreen(Point.Empty, Point.Empty, bounds.Size);
+					g.CopyFromScreen(screen.Bounds.X, screen.Bounds.Y, 0, 0, screen.Bounds.Size, CopyPixelOperation.SourceCopy);
                 }
                 rwl.AcquireWriterLock(Timeout.Infinite);
                 bitmap.Save(Application.StartupPath + "/WebServer" + "/ScreenTask.jpg", ImageFormat.Jpeg);
@@ -336,7 +351,7 @@ namespace ScreenTask
             isTakingScreenshots = false;
             btnStartServer.Enabled = true;
             btnStopServer.Enabled = false;
-            Log("Server Stoped.");
+            Log("Server Stopped.");
         }
 
         private void cbPrivate_CheckedChanged(object sender, EventArgs e)
@@ -353,6 +368,7 @@ namespace ScreenTask
                 txtPassword.Enabled = false;
                 isPrivateTask = false;
             }
+			Properties.Settings.Default.Private = cbPrivate.Checked;
         }
 
         private void cbPreview_CheckedChanged(object sender, EventArgs e)
@@ -378,6 +394,7 @@ namespace ScreenTask
             {
                 isMouseCapture = false;
             }
+			Properties.Settings.Default.CaptureMouse = cbCaptureMouse.Checked;
         }
 
         private void txtLog_TextChanged(object sender, EventArgs e)
@@ -393,7 +410,12 @@ namespace ScreenTask
             {
                 comboIPs.Items.Add(ip.Item2 + " - " + ip.Item1);
             }
-            comboIPs.SelectedIndex = comboIPs.Items.Count - 1;
+			comboIPs.SelectedIndex = Properties.Settings.Default.IP;
+			numPort.Value = Properties.Settings.Default.Port;
+			numShotEvery.Value = Properties.Settings.Default.Rate;
+			cbPrivate.Checked = Properties.Settings.Default.Private;
+			txtUser.Text = Properties.Settings.Default.User;
+			cbCaptureMouse.Checked = Properties.Settings.Default.CaptureMouse;
         }
 
         private void imgPreview_Click(object sender, EventArgs e)
@@ -435,6 +457,36 @@ namespace ScreenTask
         {
             Process.Start("https://github.com/EslaMx7/ScreenTask");
         }
+
+		private void comboScreens_SelectedIndexChanged(object sender, EventArgs e)
+		{
+			Properties.Settings.Default.Display = comboScreens.SelectedIndex;
+		}
+
+		private void frmMain_FormClosing(object sender, FormClosingEventArgs e)
+		{
+			Properties.Settings.Default.Save();
+		}
+
+		private void comboIPs_SelectedIndexChanged(object sender, EventArgs e)
+		{
+			Properties.Settings.Default.IP = comboIPs.SelectedIndex;
+		}
+
+		private void numPort_ValueChanged(object sender, EventArgs e)
+		{
+			Properties.Settings.Default.Port = Convert.ToInt32(numPort.Value);
+		}
+
+		private void numShotEvery_ValueChanged(object sender, EventArgs e)
+		{
+			Properties.Settings.Default.Rate = Convert.ToInt32(numShotEvery.Value);
+		}
+
+		private void txtUser_TextChanged(object sender, EventArgs e)
+		{
+			Properties.Settings.Default.User = txtUser.Text;
+		}
 
 
     }
